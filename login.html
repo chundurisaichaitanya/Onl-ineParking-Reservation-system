@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Vehicle Parking Reservation System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🚗 Online Vehicle Parking Reservation System</h1>
+
+  <!-- Parking Lot Section -->
+  <section>
+    <h2>Available Parking Slots</h2>
+    <div class="parking-lot" id="parkingLot"></div>
+  </section>
+
+  <!-- Booking Form Modal -->
+  <div id="bookingForm" class="modal">
+    <div class="modal-content">
+      <h2>Book Parking Slot</h2>
+      <label>Name:</label>
+      <input type="text" id="name" placeholder="Enter your name" required>
+      <label>Vehicle Number:</label>
+      <input type="text" id="vehicleNumber" placeholder="e.g. AP09XY1234" required>
+      <button id="confirmBtn">Confirm Booking</button>
+      <button id="cancelBtn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Booking Summary Table -->
+  <section class="summary-section">
+    <h2>📋 Booking Summary</h2>
+    <input type="text" id="searchInput" placeholder="Search by Name or Vehicle No.">
+    <table id="bookingTable">
+      <thead>
+        <tr>
+          <th>Slot No</th>
+          <th>Name</th>
+          <th>Vehicle Number</th>
+          <th>Booked Time</th>
+          <th>Remaining Time</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button id="clearAll">Clear All Bookings</button>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+<style>
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f4f7fb;
+  text-align: center;
+  margin: 0;
+  padding-bottom: 40px;
+}
+
+h1 {
+  color: #333;
+  margin: 20px 0;
+}
+
+h2 {
+  color: #444;
+}
+
+.parking-lot {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 15px;
+  justify-content: center;
+  margin: 20px auto;
+  width: 90%;
+  max-width: 600px;
+}
+
+.slot {
+  background-color: #d4edda;
+  border: 2px solid #28a745;
+  border-radius: 10px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.3s;
+  padding: 8px;
+  box-sizing: border-box;
+  font-weight: 600;
+}
+
+.slot.booked {
+  background-color: #f8d7da;
+  border-color: #dc3545;
+  cursor: not-allowed;
+}
+
+.slot:hover {
+  transform: scale(1.03);
+}
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 320px;
+  text-align: left;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+input {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 5px 4px 0 0;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* Summary Table */
+.summary-section {
+  width: 90%;
+  margin: 40px auto;
+  max-width: 900px;
+  text-align: center;
+}
+
+#searchInput {
+  width: 60%;
+  padding: 8px;
+  margin-bottom: 15px;
+  border-radius: 5px;
+  border: 1px solid #aaa;
+  box-sizing: border-box;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: auto;
+  font-size: 14px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+
+th {
+  background-color: #007bff;
+  color: white;
+}
+
+td {
+  background-color: #f9f9f9;
+}
+
+.cancel-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background-color: #a71d2a;
+}
+
+#clearAll {
+  background-color: #6c757d;
+  margin-top: 10px;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#clearAll:hover {
+  background-color: #5a6268;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .parking-lot { grid-template-columns: repeat(2, 1fr); max-width: 90%; }
+  #searchInput { width: 90%; }
+  .modal-content { width: 90%; margin-top: 30%; }
+}
+
+</style>
+
+<script>
+  const parkingLot = document.getElementById('parkingLot');
+const bookingForm = document.getElementById('bookingForm');
+const confirmBtn = document.getElementById('confirmBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const bookingTable = document.getElementById('bookingTable').querySelector('tbody');
+const searchInput = document.getElementById('searchInput');
+const clearAllBtn = document.getElementById('clearAll');
+let selectedSlot = null;
+
+// Auto release after 1 minute (60000 ms) - change as needed
+const BOOKING_DURATION = 60000;
+
+// Generate parking slots
+const totalSlots = 20;
+let slots = JSON.parse(localStorage.getItem('parkingSlots')) || Array(totalSlots).fill(null);
+
+// Ensure slots array length
+if (!Array.isArray(slots) || slots.length !== totalSlots) {
+  slots = Array(totalSlots).fill(null);
+  localStorage.setItem('parkingSlots', JSON.stringify(slots));
+}
+
+function renderSlots() {
+  parkingLot.innerHTML = '';
+  slots.forEach((slot, index) => {
+    const div = document.createElement('div');
+    div.classList.add('slot');
+    if (slot) {
+      div.textContent = `Slot ${index + 1} - Booked`;
+      div.classList.add('booked');
+      const info = document.createElement('div');
+      info.style.fontSize = '12px';
+      info.style.marginTop = '6px';
+      info.textContent = `${slot.name} (${slot.vehicleNumber})`;
+      div.appendChild(info);
+    } else {
+      div.textContent = `Slot ${index + 1}`;
+    }
+    div.addEventListener('click', () => handleSlotClick(index));
+    parkingLot.appendChild(div);
+  });
+  renderTable();
+}
+
+function handleSlotClick(index) {
+  if (slots[index]) {
+    alert(`Slot ${index + 1} is already booked!`);
+    return;
+  }
+  selectedSlot = index;
+  bookingForm.style.display = 'block';
+}
+
+confirmBtn.addEventListener('click', () => {
+  const name = document.getElementById('name').value.trim();
+  const vehicleNumber = document.getElementById('vehicleNumber').value.trim();
+
+  if (!name || !vehicleNumber) {
+    alert('Please fill all details');
+    return;
+  }
+
+  const bookedAt = new Date().getTime();
+  const expiresAt = bookedAt + BOOKING_DURATION;
+
+  slots[selectedSlot] = { name, vehicleNumber, bookedAt, expiresAt };
+  localStorage.setItem('parkingSlots', JSON.stringify(slots));
+
+  bookingForm.style.display = 'none';
+  document.getElementById('name').value = '';
+  document.getElementById('vehicleNumber').value = '';
+  renderSlots();
+  alert(`Slot ${selectedSlot + 1} booked successfully!`);
+});
+
+cancelBtn.addEventListener('click', () => {
+  bookingForm.style.display = 'none';
+});
+
+window.onclick = function(event) {
+  if (event.target == bookingForm) {
+    bookingForm.style.display = 'none';
+  }
+};
+
+// Render booking summary table
+function renderTable() {
+  bookingTable.innerHTML = '';
+  const now = new Date().getTime();
+
+  slots.forEach((slot, index) => {
+    if (slot) {
+      const remaining = slot.expiresAt - now;
+      if (remaining <= 0) {
+        // Auto release slot if expired
+        slots[index] = null;
+        localStorage.setItem('parkingSlots', JSON.stringify(slots));
+        return;
+      }
+
+      const row = document.createElement('tr');
+      const mins = Math.floor((remaining / 1000) / 60);
+      const secs = Math.floor((remaining / 1000) % 60);
+
+      row.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${slot.name}</td>
+        <td>${slot.vehicleNumber}</td>
+        <td>${new Date(slot.bookedAt).toLocaleTimeString()}</td>
+        <td>${mins}m ${secs}s</td>
+        <td><button class="cancel-btn" data-index="${index}">Cancel</button></td>
+      `;
+      bookingTable.appendChild(row);
+    }
+  });
+
+  // Attach cancel handlers
+  document.querySelectorAll('.cancel-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.currentTarget.getAttribute('data-index'), 10);
+      cancelBooking(idx);
+    });
+  });
+}
+
+function cancelBooking(index) {
+  if (confirm(`Cancel booking for Slot ${index + 1}?`)) {
+    slots[index] = null;
+    localStorage.setItem('parkingSlots', JSON.stringify(slots));
+    renderSlots();
+  }
+}
+
+// Search filter
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value.toLowerCase();
+  const rows = bookingTable.querySelectorAll('tr');
+  rows.forEach(row => {
+    const name = row.children[1].textContent.toLowerCase();
+    const vehicle = row.children[2].textContent.toLowerCase();
+    row.style.display = (name.includes(query) || vehicle.includes(query)) ? '' : 'none';
+  });
+});
+
+// Clear all bookings
+clearAllBtn.addEventListener('click', () => {
+  if (confirm('Clear all bookings?')) {
+    slots = Array(totalSlots).fill(null);
+    localStorage.setItem('parkingSlots', JSON.stringify(slots));
+    renderSlots();
+  }
+});
+
+// Auto-refresh remaining time every second
+setInterval(() => {
+  // First check expirations and release expired slots
+  const now = Date.now();
+  let changed = false;
+  slots.forEach((s, i) => {
+    if (s && s.expiresAt <= now) {
+      slots[i] = null;
+      changed = true;
+    }
+  });
+  if (changed) localStorage.setItem('parkingSlots', JSON.stringify(slots));
+  renderSlots();
+}, 1000);
+
+// Initial render
+renderSlots();
+
+</script>
+
